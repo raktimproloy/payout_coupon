@@ -14,11 +14,13 @@ app.use(express.static('public'));
 
 // MySQL Connection
 const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'coupon_system'
+  host: '5.9.106.155',
+  user: 'owner',
+  password: 'Raktim01@',
+  database: 'follower',
+  port: 3306
 });
+
 
 db.connect((err) => {
   if (err) {
