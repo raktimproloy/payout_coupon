@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Coupon System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg">
+            <div class="container mx-auto px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold">Admin Dashboard</h1>
+                        <p class="text-blue-100 text-sm mt-1">Coupon Cashout Management System</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-blue-100">Last Updated</p>
+                        <p class="font-semibold" id="lastUpdate">Just now</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="container mx-auto px-6 py-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500 hover:shadow-lg transition">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">Total Requests</p>
+                            <p class="text-3xl font-bold text-gray-800 mt-2" id="totalRequests">0</p>
+                        </div>
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-yellow-500 hover:shadow-lg transition">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">Pending</p>
+                            <p class="text-3xl font-bold text-yellow-600 mt-2" id="pendingRequests">0</p>
+                        </div>
+                        <div class="bg-yellow-100 p-3 rounded-full">
+                            <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-green-500 hover:shadow-lg transition">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">Approved</p>
+                            <p class="text-3xl font-bold text-green-600 mt-2" id="approvedRequests">0</p>
+                        </div>
+                        <div class="bg-green-100 p-3 rounded-full">
+                            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-red-500 hover:shadow-lg transition">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm font-medium">Canceled</p>
+                            <p class="text-3xl font-bold text-red-600 mt-2" id="canceledRequests">0</p>
+                        </div>
+                        <div class="bg-red-100 p-3 rounded-full">
+                            <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="bg-white rounded-xl shadow-md mb-6">
+                <div class="border-b border-gray-200">
+                    <div class="flex space-x-8 px-6">
+                        <button onclick="filterRequests('all')" 
+                                class="filter-tab active py-4 px-2 border-b-2 font-medium text-sm transition">
+                            All Requests
+                        </button>
+                        <button onclick="filterRequests('pending')" 
+                                class="filter-tab py-4 px-2 border-b-2 border-transparent font-medium text-sm transition">
+                            Pending
+                        </button>
+                        <button onclick="filterRequests('approved')" 
+                                class="filter-tab py-4 px-2 border-b-2 border-transparent font-medium text-sm transition">
+                            Approved
+                        </button>
+                        <button onclick="filterRequests('canceled')" 
+                                class="filter-tab py-4 px-2 border-b-2 border-transparent font-medium text-sm transition">
+                            Canceled
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Requests Table -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                    <h2 class="text-xl font-semibold text-gray-800">Cashout Requests</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Coupon</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile Number</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TRX Details</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requestsTable" class="bg-white divide-y divide-gray-200">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                    <div id="emptyState" class="hidden text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                        </svg>
+                        <p class="mt-4 text-gray-500 font-medium">No requests found</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Approve Modal -->
+    <div id="approveModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 transform transition-all">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">Approve Request</h3>
+                <button onclick="closeApproveModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="mb-6 p-4 bg-blue-50 rounded-lg" id="requestDetails">
+                <!-- Request details will be inserted here -->
+            </div>
+
+            <form id="approveForm">
+                <input type="hidden" id="approveRequestId">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Transaction ID <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="trxId" required placeholder="Enter transaction ID"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Admin Mobile Number <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="adminMobile" required placeholder="e.g., 01812345678"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                </div>
+                
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeApproveModal()" 
+                            class="flex-1 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium transition">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                            class="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition">
+                        Approve
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 shadow-xl">
+            <div class="flex items-center space-x-3">
+                <svg class="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-gray-700 font-medium">Processing...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+        let allRequests = [];
+        let currentFilter = 'all';
+
+        // Load requests on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRequests();
+            // Auto-refresh every 10 seconds
+            setInterval(loadRequests, 10000);
+        });
+
+        async function loadRequests() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/requests`);
+                const data = await response.json();
+
+                if (data.success) {
+                    allRequests = data.requests;
+                    displayRequests(filterByStatus(allRequests, currentFilter));
+                    updateStats(allRequests);
+                    updateLastUpdateTime();
+                }
+            } catch (error) {
+                console.error('Error loading requests:', error);
+                showToast('Failed to load requests', 'error');
+            }
+        }
+
+        function filterByStatus(requests, status) {
+            if (status === 'all') return requests;
+            return requests.filter(r => r.status === status);
+        }
+
+        function filterRequests(status) {
+            currentFilter = status;
+            
+            // Update active tab
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active', 'border-blue-600', 'text-blue-600');
+                tab.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+            });
+            event.target.classList.add('active', 'border-blue-600', 'text-blue-600');
+            event.target.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+            
+            displayRequests(filterByStatus(allRequests, status));
+        }
+
+        function displayRequests(requests) {
+            const tbody = document.getElementById('requestsTable');
+            const emptyState = document.getElementById('emptyState');
+            
+            tbody.innerHTML = '';
+
+            if (requests.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            requests.forEach(request => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 transition';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-sm font-medium text-gray-900">#${request.id}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-sm font-bold text-blue-600">${request.coupon_code}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-sm font-semibold text-gray-900">RM ${parseFloat(request.amount).toFixed(2)}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-sm text-gray-900">${request.cashout_number}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium capitalize ${getPaymentMethodColor(request.payment_method)}">
+                            ${request.payment_method}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        ${getStatusBadge(request.status)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        ${getTrxDetails(request)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${formatDate(request.created_at)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        ${getActionButtons(request)}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function getPaymentMethodColor(method) {
+            const colors = {
+                bkash: 'bg-pink-100 text-pink-800',
+                nogod: 'bg-orange-100 text-orange-800',
+                rocket: 'bg-purple-100 text-purple-800'
+            };
+            return colors[method] || 'bg-gray-100 text-gray-800';
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                pending: '<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">⏳ Pending</span>',
+                approved: '<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">✓ Approved</span>',
+                canceled: '<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">✗ Canceled</span>'
+            };
+            return badges[status] || status;
+        }
+
+        function getTrxDetails(request) {
+            if (request.status === 'approved' && request.trx_id) {
+                return `
+                    <div class="text-xs">
+                        <div class="font-medium text-gray-900">TRX: ${request.trx_id}</div>
+                        <div class="text-gray-500">Mobile: ${request.admin_mobile || 'N/A'}</div>
+                    </div>
+                `;
+            }
+            return '<span class="text-xs text-gray-400">-</span>';
+        }
+
+        function getActionButtons(request) {
+            if (request.status === 'pending') {
+                return `
+                    <div class="flex gap-2">
+                        <button onclick="openApproveModal(${request.id}, '${request.coupon_code}', ${request.amount}, '${request.cashout_number}', '${request.payment_method}')" 
+                                class="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition">
+                            Approve
+                        </button>
+                        <button onclick="updateStatus(${request.id}, 'canceled')" 
+                                class="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 transition">
+                            Cancel
+                        </button>
+                    </div>
+                `;
+            }
+            return '<span class="text-xs text-gray-400">No actions</span>';
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function updateStats(requests) {
+            document.getElementById('totalRequests').textContent = requests.length;
+            document.getElementById('pendingRequests').textContent = 
+                requests.filter(r => r.status === 'pending').length;
+            document.getElementById('approvedRequests').textContent = 
+                requests.filter(r => r.status === 'approved').length;
+            document.getElementById('canceledRequests').textContent = 
+                requests.filter(r => r.status === 'canceled').length;
+        }
+
+        function updateLastUpdateTime() {
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+        }
+
+        async function updateStatus(id, status) {
+            if (!confirm(`Are you sure you want to ${status} this request?`)) return;
+
+            showLoading(true);
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/requests/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(`Request ${status} successfully`, 'success');
+                    loadRequests();
+                } else {
+                    showToast(data.error || 'Failed to update status', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                showToast('Failed to update status', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function openApproveModal(id, couponCode, amount, mobile, paymentMethod) {
+            document.getElementById('approveRequestId').value = id;
+            document.getElementById('requestDetails').innerHTML = `
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-600">Request ID:</span>
+                        <span class="text-sm font-semibold text-gray-900">#${id}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-600">Coupon:</span>
+                        <span class="text-sm font-semibold text-blue-600">${couponCode}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-600">Amount:</span>
+                        <span class="text-sm font-semibold text-green-600">RM ${parseFloat(amount).toFixed(2)}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-600">Mobile:</span>
+                        <span class="text-sm font-semibold text-gray-900">${mobile}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-600">Payment:</span>
+                        <span class="text-sm font-semibold text-gray-900 capitalize">${paymentMethod}</span>
+                    </div>
+                </div>
+            `;
+            document.getElementById('approveModal').classList.remove('hidden');
+        }
+
+        function closeApproveModal() {
+            document.getElementById('approveModal').classList.add('hidden');
+            document.getElementById('approveForm').reset();
+        }
+
+        document.getElementById('approveForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const id = document.getElementById('approveRequestId').value;
+            const trxId = document.getElementById('trxId').value.trim();
+            const adminMobile = document.getElementById('adminMobile').value.trim();
+
+            if (!trxId || !adminMobile) {
+                showToast('Please fill all required fields', 'error');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/requests/${id}/approve`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ trxId, adminMobile })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('Request approved successfully', 'success');
+                    closeApproveModal();
+                    loadRequests();
+                } else {
+                    showToast(data.error || 'Failed to approve request', 'error');
+                }
+            } catch (error) {
+                console.error('Error approving request:', error);
+                showToast('Failed to approve request', 'error');
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').classList.toggle('hidden', !show);
+        }
+
+        function showToast(message, type = 'success') {
+            const colors = {
+                success: 'bg-green-600',
+                error: 'bg-red-600',
+                info: 'bg-blue-600'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Add CSS for active tab
+        const style = document.createElement('style');
+        style.textContent = `
+            .filter-tab.active {
+                border-color: #2563eb;
+                color: #2563eb;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
