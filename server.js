@@ -1,6 +1,6 @@
 // server.js
 const express = require('express');
-const mysql = require('mysql2');
+const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 
@@ -12,222 +12,220 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// MySQL Connection
-const db = mysql.createConnection({
-  host: '5.9.106.155',
-  user: 'owner',
-  password: 'Raktim01@',
-  database: 'follower',
-  port: 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  // This helps prevent "fatal" errors due to inactivity
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 10000
-});
+// MongoDB Connection
+const MONGODB_URI = "mongodb+srv://hiddenguy:8YXnTmTRwTlIrVZI@project1.rvwfnr9.mongodb.net/chatting-app?retryWrites=true&w=majority&appName=Project1";
 
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log('Connected to MongoDB database'))
+  .catch((err) => console.error('Database connection failed:', err));
 
-db.connect((err) => {
-  if (err) {
-    console.error('Database connection failed:', err);
-    return;
+// Define Schemas
+const couponSchema = new mongoose.Schema({
+  code: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  amount: {
+    type: Number,
+    required: true
+  },
+  active: {
+    type: Boolean,
+    default: true
   }
-  console.log('Connected to MySQL database');
 });
 
-// Create tables if not exists
-const createTables = () => {
-  const couponsTable = `
-    CREATE TABLE IF NOT EXISTS coupons (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      code VARCHAR(50) UNIQUE NOT NULL,
-      amount DECIMAL(10, 2) NOT NULL,
-      active BOOLEAN DEFAULT true
-    )
-  `;
+const cashoutRequestSchema = new mongoose.Schema({
+  coupon_code: {
+    type: String,
+    required: true
+  },
+  amount: {
+    type: Number,
+    required: true
+  },
+  cashout_number: {
+    type: String,
+    required: true
+  },
+  payment_method: {
+    type: String,
+    required: true,
+    enum: ['bkash', 'nogod', 'rocket']
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'canceled'],
+    default: 'pending'
+  },
+  trx_id: {
+    type: String,
+    default: null
+  },
+  admin_mobile: {
+    type: String,
+    default: null
+  }
+}, {
+  timestamps: true
+});
 
-  const requestsTable = `
-    CREATE TABLE IF NOT EXISTS cashout_requests (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      coupon_code VARCHAR(50) NOT NULL,
-      amount DECIMAL(10, 2) NOT NULL,
-      cashout_number VARCHAR(20) NOT NULL,
-      payment_method VARCHAR(20) NOT NULL,
-      status ENUM('pending', 'approved', 'canceled') DEFAULT 'pending',
-      trx_id VARCHAR(50),
-      admin_mobile VARCHAR(20),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    )
-  `;
+// Create Models
+const Coupon = mongoose.model('Coupon', couponSchema);
+const CashoutRequest = mongoose.model('CashoutRequest', cashoutRequestSchema);
 
-  db.query(couponsTable, (err) => {
-    if (err) console.error('Error creating coupons table:', err);
-  });
-
-  db.query(requestsTable, (err) => {
-    if (err) console.error('Error creating requests table:', err);
-  });
-
-  // Insert dummy coupons
+// Initialize dummy coupons
+const initializeCoupons = async () => {
   const dummyCoupons = [
-    ['RM100', 100.00],
-    ['RM200', 200.00],
-    ['RM500', 500.00],
-    ['RM1000', 1000.00]
+    { code: 'RM100', amount: 100.00 },
+    { code: 'RM200', amount: 200.00 },
+    { code: 'RM500', amount: 500.00 },
+    { code: 'RM1000', amount: 1000.00 }
   ];
 
-  dummyCoupons.forEach(([code, amount]) => {
-    db.query(
-      'INSERT IGNORE INTO coupons (code, amount) VALUES (?, ?)',
-      [code, amount]
-    );
-  });
+  try {
+    for (const coupon of dummyCoupons) {
+      await Coupon.findOneAndUpdate(
+        { code: coupon.code },
+        coupon,
+        { upsert: true, new: true }
+      );
+    }
+    console.log('Dummy coupons initialized');
+  } catch (err) {
+    console.error('Error initializing coupons:', err);
+  }
 };
 
-createTables();
+// Initialize coupons after connection
+mongoose.connection.once('open', () => {
+  initializeCoupons();
+});
 
 // ============ USER APIs ============
 
 // 1a. Check coupon code
-app.post('/api/user/check-coupon', (req, res) => {
-  const { couponCode } = req.body;
+app.post('/api/user/check-coupon', async (req, res) => {
+  try {
+    const { couponCode } = req.body;
 
-  if (!couponCode) {
-    return res.status(400).json({ error: 'Coupon code is required' });
-  }
-
-  const query = 'SELECT * FROM coupons WHERE code = ? AND active = true';
-  
-  db.query(query, [couponCode], (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
+    if (!couponCode) {
+      return res.status(400).json({ error: 'Coupon code is required' });
     }
 
-    if (results.length === 0) {
+    const coupon = await Coupon.findOne({ code: couponCode, active: true });
+
+    if (!coupon) {
       return res.status(404).json({ error: 'Invalid or inactive coupon code' });
     }
 
     res.json({
       success: true,
       coupon: {
-        code: results[0].code,
-        amount: results[0].amount
+        code: coupon.code,
+        amount: coupon.amount
       }
     });
-  });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // 1b. Submit cashout request
-app.post('/api/user/cashout', (req, res) => {
-  const { couponCode, cashoutNumber, paymentMethod } = req.body;
+app.post('/api/user/cashout', async (req, res) => {
+  try {
+    const { couponCode, cashoutNumber, paymentMethod } = req.body;
 
-  // Validation
-  if (!couponCode || !cashoutNumber || !paymentMethod) {
-    return res.status(400).json({ error: 'All fields are required' });
-  }
-
-  if (!['bkash', 'nogod', 'rocket'].includes(paymentMethod)) {
-    return res.status(400).json({ error: 'Invalid payment method' });
-  }
-
-  // Check if coupon exists
-  db.query('SELECT * FROM coupons WHERE code = ? AND active = true', [couponCode], (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err });
+    // Validation
+    if (!couponCode || !cashoutNumber || !paymentMethod) {
+      return res.status(400).json({ error: 'All fields are required' });
     }
 
-    if (results.length === 0) {
+    if (!['bkash', 'nogod', 'rocket'].includes(paymentMethod)) {
+      return res.status(400).json({ error: 'Invalid payment method' });
+    }
+
+    // Check if coupon exists
+    const coupon = await Coupon.findOne({ code: couponCode, active: true });
+
+    if (!coupon) {
       return res.status(404).json({ error: 'Invalid coupon code' });
     }
 
-    const amount = results[0].amount;
-
-    // Insert cashout request
-    const insertQuery = `
-      INSERT INTO cashout_requests (coupon_code, amount, cashout_number, payment_method)
-      VALUES (?, ?, ?, ?)
-    `;
-
-    db.query(insertQuery, [couponCode, amount, cashoutNumber, paymentMethod], (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: 'Failed to submit request' });
-      }
-
-      res.json({
-        success: true,
-        message: 'Cashout request submitted successfully',
-        requestId: result.insertId
-      });
+    // Create cashout request
+    const cashoutRequest = new CashoutRequest({
+      coupon_code: couponCode,
+      amount: coupon.amount,
+      cashout_number: cashoutNumber,
+      payment_method: paymentMethod
     });
-  });
-});
 
-// 1c. Get user history
-app.get('/api/user/history/:cashoutNumber', (req, res) => {
-  const { cashoutNumber } = req.params;
-
-  const query = `
-    SELECT id, coupon_code, amount, cashout_number, payment_method, 
-           status, trx_id, admin_mobile, created_at, updated_at
-    FROM cashout_requests
-    WHERE cashout_number = ?
-    ORDER BY created_at DESC
-  `;
-
-  db.query(query, [cashoutNumber], (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: err });
-    }
+    const savedRequest = await cashoutRequest.save();
 
     res.json({
       success: true,
-      history: results
+      message: 'Cashout request submitted successfully',
+      requestId: savedRequest._id
     });
-  });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to submit request' });
+  }
+});
+
+// 1c. Get user history
+app.get('/api/user/history/:cashoutNumber', async (req, res) => {
+  try {
+    const { cashoutNumber } = req.params;
+
+    const history = await CashoutRequest.find({ cashout_number: cashoutNumber })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({
+      success: true,
+      history: history
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // ============ ADMIN APIs ============
 
 // 2a. Get all requests
-app.get('/api/admin/requests', (req, res) => {
-  const query = `
-    SELECT id, coupon_code, amount, cashout_number, payment_method, 
-           status, trx_id, admin_mobile, created_at, updated_at
-    FROM cashout_requests
-    ORDER BY created_at DESC
-  `;
-
-  db.query(query, (err, results) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
-    }
+app.get('/api/admin/requests', async (req, res) => {
+  try {
+    const requests = await CashoutRequest.find()
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.json({
       success: true,
-      requests: results
+      requests: requests
     });
-  });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // 2b. Update request status
-app.put('/api/admin/requests/:id/status', (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
+app.put('/api/admin/requests/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
 
-  if (!['pending', 'approved', 'canceled'].includes(status)) {
-    return res.status(400).json({ error: 'Invalid status' });
-  }
-
-  const query = 'UPDATE cashout_requests SET status = ? WHERE id = ?';
-
-  db.query(query, [status, id], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
+    if (!['pending', 'approved', 'canceled'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
     }
 
-    if (result.affectedRows === 0) {
+    const updatedRequest = await CashoutRequest.findByIdAndUpdate(
+      id,
+      { status: status },
+      { new: true }
+    );
+
+    if (!updatedRequest) {
       return res.status(404).json({ error: 'Request not found' });
     }
 
@@ -235,30 +233,32 @@ app.put('/api/admin/requests/:id/status', (req, res) => {
       success: true,
       message: 'Status updated successfully'
     });
-  });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // 2c. Approve request with transaction details
-app.put('/api/admin/requests/:id/approve', (req, res) => {
-  const { id } = req.params;
-  const { trxId, adminMobile } = req.body;
+app.put('/api/admin/requests/:id/approve', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { trxId, adminMobile } = req.body;
 
-  if (!trxId || !adminMobile) {
-    return res.status(400).json({ error: 'Transaction ID and mobile number are required' });
-  }
-
-  const query = `
-    UPDATE cashout_requests 
-    SET status = 'approved', trx_id = ?, admin_mobile = ?
-    WHERE id = ?
-  `;
-
-  db.query(query, [trxId, adminMobile, id], (err, result) => {
-    if (err) {
-      return res.status(500).json({ error: 'Database error' });
+    if (!trxId || !adminMobile) {
+      return res.status(400).json({ error: 'Transaction ID and mobile number are required' });
     }
 
-    if (result.affectedRows === 0) {
+    const updatedRequest = await CashoutRequest.findByIdAndUpdate(
+      id,
+      { 
+        status: 'approved',
+        trx_id: trxId,
+        admin_mobile: adminMobile
+      },
+      { new: true }
+    );
+
+    if (!updatedRequest) {
       return res.status(404).json({ error: 'Request not found' });
     }
 
@@ -266,7 +266,9 @@ app.put('/api/admin/requests/:id/approve', (req, res) => {
       success: true,
       message: 'Request approved successfully'
     });
-  });
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
 });
 
 // Serve admin page
