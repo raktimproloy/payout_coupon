@@ -18,7 +18,13 @@ const db = mysql.createConnection({
   user: 'owner',
   password: 'Raktim01@',
   database: 'follower',
-  port: 3306
+  port: 3306,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  // This helps prevent "fatal" errors due to inactivity
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000
 });
 
 
