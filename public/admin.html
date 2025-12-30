@@ -207,7 +207,7 @@
     </div>
 
     <script>
-        const API_BASE = 'https://payout-coupon.onrender.com/api';
+        const API_BASE = 'http://localhost:3000/api';
         let allRequests = [];
         let currentFilter = 'all';
 
@@ -270,9 +270,13 @@
             requests.forEach(request => {
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-gray-50 transition';
+                // Use _id for MongoDB, with fallback to id for compatibility
+                const requestId = request._id || request.id;
+                const displayId = requestId.substring(requestId.length - 6); // Show last 6 chars of MongoDB ID
+                
                 row.innerHTML = `
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="text-sm font-medium text-gray-900">#${request.id}</span>
+                        <span class="text-sm font-medium text-gray-900" title="${requestId}">#${displayId}</span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="text-sm font-bold text-blue-600">${request.coupon_code}</span>
@@ -295,7 +299,7 @@
                         ${getTrxDetails(request)}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ${formatDate(request.created_at)}
+                        ${formatDate(request.createdAt || request.created_at)}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         ${getActionButtons(request)}
@@ -336,14 +340,17 @@
         }
 
         function getActionButtons(request) {
+            const requestId = request._id || request.id;
+            const displayId = requestId.substring(requestId.length - 6);
+            
             if (request.status === 'pending') {
                 return `
                     <div class="flex gap-2">
-                        <button onclick="openApproveModal(${request.id}, '${request.coupon_code}', ${request.amount}, '${request.cashout_number}', '${request.payment_method}')" 
+                        <button onclick='openApproveModal("${requestId}", "${request.coupon_code}", ${request.amount}, "${request.cashout_number}", "${request.payment_method}")' 
                                 class="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition">
                             Approve
                         </button>
-                        <button onclick="updateStatus(${request.id}, 'canceled')" 
+                        <button onclick='updateStatus("${requestId}", "canceled")' 
                                 class="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 transition">
                             Cancel
                         </button>
@@ -408,12 +415,13 @@
         }
 
         function openApproveModal(id, couponCode, amount, mobile, paymentMethod) {
+            const displayId = id.substring(id.length - 6);
             document.getElementById('approveRequestId').value = id;
             document.getElementById('requestDetails').innerHTML = `
                 <div class="space-y-2">
                     <div class="flex justify-between">
                         <span class="text-sm text-gray-600">Request ID:</span>
-                        <span class="text-sm font-semibold text-gray-900">#${id}</span>
+                        <span class="text-sm font-semibold text-gray-900" title="${id}">#${displayId}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-sm text-gray-600">Coupon:</span>
