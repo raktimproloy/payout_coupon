@@ -129,7 +129,7 @@ app.post('/api/user/cashout', (req, res) => {
   // Check if coupon exists
   db.query('SELECT * FROM coupons WHERE code = ? AND active = true', [couponCode], (err, results) => {
     if (err) {
-      return res.status(500).json({ error: 'Database error' });
+      return res.status(500).json({ error: err });
     }
 
     if (results.length === 0) {
@@ -172,7 +172,7 @@ app.get('/api/user/history/:cashoutNumber', (req, res) => {
 
   db.query(query, [cashoutNumber], (err, results) => {
     if (err) {
-      return res.status(500).json({ error: 'Database error' });
+      return res.status(500).json({ error: err });
     }
 
     res.json({
